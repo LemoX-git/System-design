@@ -1,0 +1,751 @@
+openapi: 3.1.0
+info:
+  title: Recipe Management API
+  summary: REST API for homework variant 23
+  description: FastAPI service for managing users, recipes and ingredients. Implements
+    JWT authentication, in-memory storage and Swagger UI.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      tags:
+      - system
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Health Get
+  /:
+    get:
+      tags:
+      - Root
+      summary: Root
+      operationId: root__get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /auth/register:
+    post:
+      tags:
+      - auth
+      summary: Register User
+      operationId: register_user_auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegisterRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /auth/login:
+    post:
+      tags:
+      - auth
+      summary: Login User
+      operationId: login_user_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/by-login/{login}:
+    get:
+      tags:
+      - users
+      summary: Get User By Login
+      operationId: get_user_by_login_users_by_login__login__get
+      parameters:
+      - name: login
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Login
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/search:
+    get:
+      tags:
+      - users
+      summary: Search Users By Name
+      operationId: search_users_by_name_users_search_get
+      parameters:
+      - name: mask
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          description: First name / last name mask
+          title: Mask
+        description: First name / last name mask
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+                title: Response Search Users By Name Users Search Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /recipes:
+    get:
+      tags:
+      - recipes
+      summary: List Recipes
+      operationId: list_recipes_recipes_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RecipeResponse'
+                type: array
+                title: Response List Recipes Recipes Get
+    post:
+      tags:
+      - recipes
+      summary: Create Recipe
+      operationId: create_recipe_recipes_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /recipes/search:
+    get:
+      tags:
+      - recipes
+      summary: Search Recipes By Title
+      operationId: search_recipes_by_title_recipes_search_get
+      parameters:
+      - name: title
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          title: Title
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeResponse'
+                title: Response Search Recipes By Title Recipes Search Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /recipes/{recipe_id}/ingredients:
+    post:
+      tags:
+      - ingredients
+      summary: Add Ingredient To Recipe
+      operationId: add_ingredient_to_recipe_recipes__recipe_id__ingredients_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: recipe_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Recipe Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngredientCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngredientResponse'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - ingredients
+      summary: List Recipe Ingredients
+      operationId: list_recipe_ingredients_recipes__recipe_id__ingredients_get
+      parameters:
+      - name: recipe_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Recipe Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IngredientResponse'
+                title: Response List Recipe Ingredients Recipes  Recipe Id  Ingredients
+                  Get
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/me/recipes:
+    get:
+      tags:
+      - users
+      - recipes
+      summary: List My Recipes
+      operationId: list_my_recipes_users_me_recipes_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RecipeResponse'
+                type: array
+                title: Response List My Recipes Users Me Recipes Get
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - HTTPBearer: []
+  /users/{user_id}/recipes:
+    get:
+      tags:
+      - users
+      - recipes
+      summary: List User Recipes
+      operationId: list_user_recipes_users__user_id__recipes_get
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeResponse'
+                title: Response List User Recipes Users  User Id  Recipes Get
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /recipes/{recipe_id}/favorite:
+    post:
+      tags:
+      - favorites
+      summary: Add Recipe To Favorites
+      operationId: add_recipe_to_favorites_recipes__recipe_id__favorite_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: recipe_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Recipe Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - favorites
+      summary: Remove Recipe From Favorites
+      operationId: remove_recipe_from_favorites_recipes__recipe_id__favorite_delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: recipe_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Recipe Id
+      responses:
+        '204':
+          description: Successful Response
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /users/me/favorites:
+    get:
+      tags:
+      - favorites
+      summary: List My Favorites
+      operationId: list_my_favorites_users_me_favorites_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RecipeResponse'
+                type: array
+                title: Response List My Favorites Users Me Favorites Get
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - HTTPBearer: []
+components:
+  schemas:
+    ErrorResponse:
+      properties:
+        detail:
+          type: string
+          title: Detail
+          examples:
+          - Recipe not found
+      type: object
+      required:
+      - detail
+      title: ErrorResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    IngredientCreateRequest:
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Name
+          examples:
+          - Parmesan
+        quantity:
+          type: number
+          exclusiveMinimum: 0.0
+          title: Quantity
+          examples:
+          - 100
+        unit:
+          type: string
+          maxLength: 20
+          minLength: 1
+          title: Unit
+          examples:
+          - g
+      type: object
+      required:
+      - name
+      - quantity
+      - unit
+      title: IngredientCreateRequest
+    IngredientResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        quantity:
+          type: number
+          title: Quantity
+        unit:
+          type: string
+          title: Unit
+        added_at:
+          type: string
+          format: date-time
+          title: Added At
+      type: object
+      required:
+      - id
+      - name
+      - quantity
+      - unit
+      - added_at
+      title: IngredientResponse
+    MessageResponse:
+      properties:
+        detail:
+          type: string
+          title: Detail
+          examples:
+          - Recipe added to favorites
+      type: object
+      required:
+      - detail
+      title: MessageResponse
+    RecipeCreateRequest:
+      properties:
+        title:
+          type: string
+          maxLength: 120
+          minLength: 2
+          title: Title
+          examples:
+          - Spaghetti Carbonara
+        description:
+          type: string
+          maxLength: 300
+          minLength: 5
+          title: Description
+          examples:
+          - Classic Italian pasta recipe
+        instructions:
+          type: string
+          maxLength: 2000
+          minLength: 10
+          title: Instructions
+          examples:
+          - Boil pasta, fry pancetta, mix with eggs and cheese.
+      type: object
+      required:
+      - title
+      - description
+      - instructions
+      title: RecipeCreateRequest
+    RecipeResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          type: string
+          title: Description
+        instructions:
+          type: string
+          title: Instructions
+        author_id:
+          type: string
+          title: Author Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - title
+      - description
+      - instructions
+      - author_id
+      - created_at
+      title: RecipeResponse
+    TokenResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+      type: object
+      required:
+      - access_token
+      title: TokenResponse
+    UserLoginRequest:
+      properties:
+        login:
+          type: string
+          title: Login
+          examples:
+          - chef_anna
+        password:
+          type: string
+          title: Password
+          examples:
+          - StrongPass123
+      type: object
+      required:
+      - login
+      - password
+      title: UserLoginRequest
+    UserRegisterRequest:
+      properties:
+        login:
+          type: string
+          maxLength: 50
+          minLength: 3
+          title: Login
+          examples:
+          - chef_anna
+        first_name:
+          type: string
+          maxLength: 50
+          minLength: 1
+          title: First Name
+          examples:
+          - Anna
+        last_name:
+          type: string
+          maxLength: 50
+          minLength: 1
+          title: Last Name
+          examples:
+          - Ivanova
+        password:
+          type: string
+          maxLength: 128
+          minLength: 6
+          title: Password
+          examples:
+          - StrongPass123
+      type: object
+      required:
+      - login
+      - first_name
+      - last_name
+      - password
+      title: UserRegisterRequest
+    UserResponse:
+      properties:
+        id:
+          type: string
+          title: Id
+        login:
+          type: string
+          title: Login
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - login
+      - first_name
+      - last_name
+      - created_at
+      title: UserResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer
