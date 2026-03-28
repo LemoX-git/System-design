@@ -1,0 +1,106 @@
+components_manager:
+  task_processors:
+    main-task-processor:
+      worker_threads: 4
+    fs-task-processor:
+      worker_threads: 1
+
+  default_task_processor: main-task-processor
+
+  components:
+    server:
+      listener:
+        port: $service-port
+        task_processor: main-task-processor
+
+    logging:
+      fs-task-processor: fs-task-processor
+      loggers:
+        default:
+          file_path: '@stderr'
+          level: debug
+          overflow_behavior: discard
+
+    default-server-middleware-pipeline-builder: {}
+
+    recipe-storage: {}
+
+    recipe-auth-middleware: {}
+
+    auth-handler-pipeline-builder: {}
+
+    handler-register:
+      path: /api/v1/auth/register
+      method: POST
+      task_processor: main-task-processor
+
+    handler-login:
+      path: /api/v1/auth/login
+      method: POST
+      task_processor: main-task-processor
+
+    handler-user-by-login:
+      path: /api/v1/users/by-login
+      method: GET
+      task_processor: main-task-processor
+
+    handler-user-search:
+      path: /api/v1/users/search
+      method: GET
+      task_processor: main-task-processor
+
+    handler-create-recipe:
+      path: /api/v1/recipes
+      method: POST
+      task_processor: main-task-processor
+      middlewares:
+        pipeline-builder: auth-handler-pipeline-builder
+
+    handler-list-recipes:
+      path: /api/v1/recipes
+      method: GET
+      task_processor: main-task-processor
+
+    handler-add-ingredient:
+      path: /api/v1/recipes/{recipe_id}/ingredients
+      method: POST
+      task_processor: main-task-processor
+      middlewares:
+        pipeline-builder: auth-handler-pipeline-builder
+
+    handler-list-ingredients:
+      path: /api/v1/recipes/{recipe_id}/ingredients
+      method: GET
+      task_processor: main-task-processor
+
+    handler-user-recipes:
+      path: /api/v1/users/me/recipes
+      method: GET
+      task_processor: main-task-processor
+      middlewares:
+        pipeline-builder: auth-handler-pipeline-builder
+
+    handler-add-favorite:
+      path: /api/v1/users/me/favorites/{recipe_id}
+      method: POST
+      task_processor: main-task-processor
+      middlewares:
+        pipeline-builder: auth-handler-pipeline-builder
+
+    handler-list-favorites:
+      path: /api/v1/users/me/favorites
+      method: GET
+      task_processor: main-task-processor
+      middlewares:
+        pipeline-builder: auth-handler-pipeline-builder
+
+    tests-control:
+      load-enabled: $testsuite-enabled
+      path: /tests/{action}
+      method: POST
+      task_processor: main-task-processor
+      testpoint-url: $mockserver/testpoint
+      testpoint-timeout: 10s
+      throttling_enabled: false
+
+    testsuite-support: {}

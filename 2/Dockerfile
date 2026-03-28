@@ -1,18 +1,16 @@
-FROM python:3.13-slim
+FROM ghcr.io/userver-framework/ubuntu-24.04-userver:v2.14
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+COPY . .
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build -j && \
+    useradd -m -u 10001 appuser && \
+    chown -R appuser:appuser /app
 
-COPY app ./app
-COPY scripts ./scripts
-COPY openapi.yaml ./openapi.yaml
-COPY README.md ./README.md
+USER appuser
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./build/recipe_service","--config", "configs/config.yaml", "--config_vars", "configs/config_vars.yaml"]

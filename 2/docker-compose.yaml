@@ -1,0 +1,5 @@
+services:
+  recipe_service:
+    build: .
+    ports:
+      - "8080:8080"
