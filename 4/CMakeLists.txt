@@ -26,4 +26,9 @@ target_include_directories(${PROJECT_NAME}
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-userver_testsuite_add_simple()
+enable_testing()
+
+userver_testsuite_add_simple(
+    SERVICE_TARGET ${PROJECT_NAME}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
+)
