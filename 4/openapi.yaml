@@ -1,0 +1,400 @@
+openapi: 3.0.3
+info:
+  title: Recipe Service API
+  version: 1.0.0
+  description: |
+    Вариант 23. Сервис управления рецептами на userver.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Auth
+  - name: Users
+  - name: Recipes
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              example:
+                value:
+                  login: chef1
+                  first_name: Ivan
+                  last_name: Petrov
+                  password: secret
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Логин уже занят
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Логин пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/users/by-login:
+    get:
+      tags: [Users]
+      summary: Поиск пользователя по логину
+      parameters:
+        - in: query
+          name: login
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Пользователь найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/users/search:
+    get:
+      tags: [Users]
+      summary: Поиск пользователя по маске имени и фамилии
+      parameters:
+        - in: query
+          name: mask
+          required: true
+          schema:
+            type: string
+            example: ivan pet
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+  /api/v1/recipes:
+    get:
+      tags: [Recipes]
+      summary: Получение списка рецептов / поиск по названию
+      parameters:
+        - in: query
+          name: title
+          required: false
+          schema:
+            type: string
+            example: pasta
+      responses:
+        '200':
+          description: Список рецептов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeSummary'
+    post:
+      tags: [Recipes]
+      summary: Создание рецепта
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRecipeRequest'
+      responses:
+        '201':
+          description: Рецепт создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeDetailed'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/recipes/{recipe_id}/ingredients:
+    get:
+      tags: [Recipes]
+      summary: Получение ингредиентов рецепта
+      parameters:
+        - in: path
+          name: recipe_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ингредиенты рецепта
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ingredient'
+        '404':
+          description: Рецепт не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags: [Recipes]
+      summary: Добавление ингредиента в рецепт
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recipe_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddIngredientRequest'
+      responses:
+        '201':
+          description: Ингредиент добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Только автор рецепта может добавлять ингредиенты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Рецепт не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/users/me/recipes:
+    get:
+      tags: [Recipes]
+      summary: Получение рецептов пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Рецепты текущего пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/users/me/favorites/{recipe_id}:
+    post:
+      tags: [Recipes]
+      summary: Добавление рецепта в избранное
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: recipe_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Рецепт добавлен в избранное
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  recipe_id:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Рецепт не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Рецепт уже в избранном
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/users/me/favorites:
+    get:
+      tags: [Recipes]
+      summary: Получение избранных рецептов пользователя
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Избранные рецепты
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Требуется Bearer token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+    RegisterRequest:
+      type: object
+      required: [login, first_name, last_name, password]
+      properties:
+        login:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        password:
+          type: string
+    LoginRequest:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+    CreateRecipeRequest:
+      type: object
+      required: [title, description]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+    AddIngredientRequest:
+      type: object
+      required: [name, amount]
+      properties:
+        name:
+          type: string
+        amount:
+          type: string
+    Ingredient:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        amount:
+          type: string
+    RecipeSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        author_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        ingredients_count:
+          type: integer
+    RecipeDetailed:
+      type: object
+      properties:
+        id:
+          type: integer
+        author_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'

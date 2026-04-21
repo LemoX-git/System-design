@@ -1,0 +1,26 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: recipe_service_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./mongo/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  recipe_service:
+    build: .
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
