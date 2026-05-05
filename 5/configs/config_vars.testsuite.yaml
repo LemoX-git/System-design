@@ -1,0 +1,3 @@
+service-port: 8080
+testsuite-enabled: true
+dbconnection: "host=postgres port=5432 dbname=recipe_service_test user=recipe_user password=recipe_password"
