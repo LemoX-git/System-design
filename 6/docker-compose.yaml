@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: recipe_service
+      POSTGRES_USER: recipe_user
+      POSTGRES_PASSWORD: recipe_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init/00-create-test-db.sql:/docker-entrypoint-initdb.d/00-create-test-db.sql:ro
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recipe_user -d recipe_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: recipe
+      RABBITMQ_DEFAULT_PASS: recipe
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  recipe_service:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  event_producer:
+    build:
+      context: .
+      dockerfile: events/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_DSN: "host=postgres port=5432 dbname=recipe_service user=recipe_user password=recipe_password"
+      RABBITMQ_URL: "amqp://recipe:recipe@rabbitmq:5672/%2F"
+      EXCHANGE_NAME: "recipe.events"
+    command: ["python", "producer.py"]
+    restart: unless-stopped
+
+  event_consumer:
+    build:
+      context: .
+      dockerfile: events/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DB_DSN: "host=postgres port=5432 dbname=recipe_service user=recipe_user password=recipe_password"
+      RABBITMQ_URL: "amqp://recipe:recipe@rabbitmq:5672/%2F"
+      EXCHANGE_NAME: "recipe.events"
+      QUEUE_NAME: "recipe.events.read_model"
+    command: ["python", "consumer.py"]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

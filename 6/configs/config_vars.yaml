@@ -1,0 +1,3 @@
+service-port: 8080
+testsuite-enabled: false
+dbconnection: "host=localhost port=5432 dbname=recipe_service user=recipe_user password=recipe_password"
